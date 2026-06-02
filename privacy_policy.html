@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — DevReload</title>
+    <style>
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        max-width: 720px;
+        margin: 48px auto;
+        padding: 0 24px 60px;
+        color: #1f2937;
+        line-height: 1.7;
+      }
+      h1 {
+        font-size: 28px;
+        color: #111827;
+        margin-bottom: 4px;
+      }
+      .subtitle {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 40px;
+      }
+      h2 {
+        font-size: 16px;
+        color: #111827;
+        margin-top: 32px;
+        margin-bottom: 8px;
+      }
+      p,
+      li {
+        font-size: 14px;
+        color: #374151;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 6px;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #e5e7eb;
+        margin: 40px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Privacy Policy</h1>
+    <p class="subtitle">
+      DevReload Chrome Extension &mdash; Last updated: May 2026
+    </p>
+
+    <h2>1. Overview</h2>
+    <p>
+      DevReload ("the Extension") is a developer utility that watches local
+      files for changes and reloads the active browser tab. This policy explains
+      what data the Extension accesses, how it uses that data, and what it does
+      <em>not</em> do.
+    </p>
+
+    <h2>2. Data We Access</h2>
+    <ul>
+      <li>
+        <strong>Local file system (via File System Access API):</strong> When
+        you click "Pick Folder", the browser asks for your explicit permission
+        to read a folder you choose. The Extension reads file metadata (<code
+          >lastModified</code
+        >
+        timestamps) and, when CSS-only reload is active, the text content of
+        changed CSS files. No other files are read.
+      </li>
+      <li>
+        <strong>Active browser tab:</strong> The Extension reloads (or injects
+        CSS into) the currently active tab when a file change is detected. It
+        reads the tab's ID for this purpose only.
+      </li>
+      <li>
+        <strong>Extension settings:</strong> Your preferences (polling interval,
+        file extensions filter, CSS-only mode, enabled state, and the last few
+        detected-change entries) are stored locally in
+        <code>chrome.storage.local</code> on your device.
+      </li>
+      <li>
+        <strong>Directory handle:</strong> A reference to your chosen folder (a
+        <code>FileSystemDirectoryHandle</code>) is stored in
+        <strong>IndexedDB</strong> on your device so the Extension can resume
+        watching after a browser restart. This handle cannot be used to access
+        your files by any other origin.
+      </li>
+    </ul>
+
+    <h2>3. Data We Do NOT Collect</h2>
+    <ul>
+      <li>
+        We do <strong>not</strong> transmit any data to external servers or
+        third parties.
+      </li>
+      <li>
+        We do <strong>not</strong> store, log, or read the <em>contents</em> of
+        your files, except the CSS text content temporarily used for in-page
+        injection (never stored).
+      </li>
+      <li>
+        We do <strong>not</strong> collect analytics, usage metrics, or crash
+        reports.
+      </li>
+      <li>
+        We do <strong>not</strong> use cookies or any tracking technology.
+      </li>
+    </ul>
+
+    <h2>4. Permissions Explained</h2>
+    <ul>
+      <li>
+        <strong>storage</strong> — saves your settings locally in
+        <code>chrome.storage.local</code>.
+      </li>
+      <li>
+        <strong>tabs</strong> — reads the active tab ID in order to reload it.
+      </li>
+      <li>
+        <strong>activeTab</strong> — grants temporary access to the active tab
+        when the extension is invoked.
+      </li>
+      <li>
+        <strong>scripting</strong> — injects updated CSS into the active tab
+        (CSS-only reload mode only).
+      </li>
+    </ul>
+
+    <h2>5. Third-Party Services</h2>
+    <p>
+      DevReload has no external dependencies and makes no network requests. All
+      functionality works entirely offline.
+    </p>
+
+    <h2>6. Children's Privacy</h2>
+    <p>
+      DevReload is a developer tool not directed at children. We do not
+      knowingly collect any personal information from anyone.
+    </p>
+
+    <h2>7. Changes to This Policy</h2>
+    <p>
+      If this policy changes, the updated version will be published at the same
+      URL with a revised "Last updated" date.
+    </p>
+
+    <h2>8. Contact</h2>
+    <p>
+      Questions about this privacy policy? Please open an issue in the project
+      repository or contact the developer at the address listed on the Chrome
+      Web Store listing page.
+    </p>
+
+    <hr />
+    <p style="font-size: 12px; color: #9ca3af">
+      DevReload is an open-source project. No data leaves your device.
+    </p>
+  </body>
+</html>

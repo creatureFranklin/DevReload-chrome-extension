@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DevReload</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <!-- subtle background grid -->
+    <div class="bg-pattern" aria-hidden="true"></div>
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="header">
+      <div class="header-logo">
+        <div class="header-icon">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+        </div>
+        <span class="header-title">DevReload</span>
+      </div>
+      <div class="header-controls">
+        <span id="header-badge" class="badge badge-paused">Paused</span>
+        <label class="toggle toggle-sm" title="Enable / disable file watching">
+          <input type="checkbox" id="chk-enabled" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+    </header>
+
+    <!-- ── Main ───────────────────────────────────────────── -->
+    <main class="main">
+      <!-- 1. Watched Folder -->
+      <section class="card-section">
+        <div class="section-label">Watched Folder</div>
+        <div class="card">
+          <!-- Empty state -->
+          <div id="empty-state" class="empty-state hidden">
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#cbbba6"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+              />
+            </svg>
+            <p class="empty-hint">
+              No folder selected.<br />Pick a folder to start watching.
+            </p>
+          </div>
+
+          <!-- Folder info row -->
+          <div id="folder-info" class="folder-row hidden">
+            <div class="folder-icon-wrap">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#2563eb"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                />
+              </svg>
+            </div>
+            <div class="folder-details">
+              <span id="folder-name" class="folder-name" title="">—</span>
+              <span class="folder-sub">Watching for recursive changes</span>
+            </div>
+          </div>
+
+          <!-- Permission warning -->
+          <div id="perm-warning" class="alert alert-warn hidden">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Permission expired.
+            <button id="btn-regrant" class="btn btn-sm btn-warn">
+              Re-grant Access
+            </button>
+          </div>
+
+          <!-- Actions -->
+          <div class="folder-actions">
+            <button id="btn-pick" class="btn btn-primary">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Pick Folder
+            </button>
+            <button id="btn-clear" class="btn btn-ghost hidden">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              Clear
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Per-origin reload toggle -->
+      <div class="card card-row">
+        <div class="row-label">
+          <span id="origin-dot" class="dot dot-off"></span>
+          <div class="toggle-label-stack">
+            <span id="origin-mode-label" class="toggle-label"
+              >Reload: active tab</span
+            >
+            <span id="origin-display" class="row-sublabel"
+              >Pick a folder to detect origin</span
+            >
+          </div>
+        </div>
+        <label
+          class="toggle"
+          title="OFF — reload whatever tab is currently active&#10;ON — reload only tabs on the detected origin (e.g. localhost:3000)"
+        >
+          <input type="checkbox" id="chk-origin-mode" disabled />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+
+      <!-- 3. Settings -->
+      <section class="card-section">
+        <div class="section-label">Settings</div>
+        <div class="card">
+          <!-- Polling interval -->
+          <div class="field">
+            <label class="field-label" for="sel-interval">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Polling Interval
+            </label>
+            <div class="input-row">
+              <select id="sel-interval" class="select">
+                <option value="300">300</option>
+                <option value="500">500</option>
+                <option value="1000" selected>1000</option>
+                <option value="2000">2000</option>
+              </select>
+              <span class="input-unit">ms</span>
+            </div>
+          </div>
+
+          <!-- Extension filter -->
+          <div class="field">
+            <label class="field-label" for="inp-extensions">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              File Extensions
+            </label>
+            <input
+              type="text"
+              id="inp-extensions"
+              class="input"
+              value=".html .css .js .php .vue .ts"
+              placeholder=".html .css .js"
+              spellcheck="false"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Recent Changes -->
+      <section class="card-section">
+        <div class="section-header">
+          <div class="section-label">Recent Changes</div>
+          <button id="btn-clear-log" class="btn-text-danger">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+            </svg>
+            Clear
+          </button>
+        </div>
+        <ul id="change-log" class="log-list">
+          <li class="log-empty">No changes detected yet.</li>
+        </ul>
+      </section>
+    </main>
+
+    <!-- ── Footer ─────────────────────────────────────────── -->
+    <footer class="footer">
+      <span class="footer-version">v1.0</span>
+      <a
+        href="https://buymeacoffee.com/reminektomq"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-donate"
+      >
+        <svg
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+          <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+          <line x1="6" y1="1" x2="6" y2="4" />
+          <line x1="10" y1="1" x2="10" y2="4" />
+          <line x1="14" y1="1" x2="14" y2="4" />
+        </svg>
+        Donate
+        <svg
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="#ef4444"
+          stroke="#ef4444"
+          stroke-width="1"
+        >
+          <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+          />
+        </svg>
+      </a>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
