@@ -78,12 +78,38 @@ function broadcastToPopup(msg) {
   chrome.runtime.sendMessage(msg).catch(() => {});
 }
 
-function updateActionBadge(active) {
-  if (active) {
-    chrome.action.setBadgeText({ text: '\u25cf' });
-    chrome.action.setBadgeBackgroundColor({ color: '#16a34a' });
+// ─── Action icon & per-tab badge ──────────────────────────────────────────────
+
+/** Switch the toolbar icon between colour (active) and grey (idle). */
+function updateExtensionIcon() {
+  const active = settings.enabled && !!dirHandle;
+  chrome.action.setIcon({
+    path: active
+      ? { 16: 'icons/icon16.png', 32: 'icons/icon32.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' }
+      : { 16: 'icons/icon-gray-16.png', 32: 'icons/icon-gray-32.png', 48: 'icons/icon-gray-48.png', 128: 'icons/icon-gray-128.png' },
+  });
+}
+
+/** Update the action badge for a specific tab based on watcher state. */
+function updateBadgeForTab(tabId, tabUrl) {
+  let show = false;
+  if (tabUrl && settings.enabled && watchedOrigin) {
+    try { show = new URL(tabUrl).origin === watchedOrigin; } catch (_) {}
+  }
+  if (show) {
+    chrome.action.setBadgeText({ text: '\u25cf', tabId });
+    chrome.action.setBadgeBackgroundColor({ color: '#22c55e', tabId });
+    chrome.action.setBadgeTextColor({ color: '#ffffff', tabId });
   } else {
-    chrome.action.setBadgeText({ text: '' });
+    chrome.action.setBadgeText({ text: '', tabId });
+  }
+}
+
+/** Re-evaluate the badge on every open tab. */
+async function updateAllTabBadges() {
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.id != null) updateBadgeForTab(tab.id, tab.url ?? '');
   }
 }
 
@@ -164,8 +190,8 @@ async function pollOnce() {
   } catch (err) {
     if (err.name === 'NotAllowedError') {
       console.warn('[DevReload SW] Permission lost.');
-      await stopWatching();
       settings.enabled = false; await saveSettings();
+      await stopWatching();
       broadcastToPopup({ type: 'PERMISSION_LOST' });
     } else {
       console.error('[DevReload SW] Scan error:', err.name, err.message);
@@ -242,7 +268,8 @@ chrome.runtime.onConnect.addListener((port) => {
 async function startWatching() {
   snapshotReady = false;
   fileSnapshots = new Map();
-  updateActionBadge(true);
+  updateExtensionIcon();
+  await updateAllTabBadges();
   await ensureOffscreen();
   // Offscreen READY handler will trigger the first pollOnce.
   // If offscreen was already running, poll immediately.
@@ -255,7 +282,8 @@ async function stopWatching() {
   snapshotReady = false;
   fileSnapshots = new Map();
   lastPollTime = 0;
-  updateActionBadge(false);
+  updateExtensionIcon();
+  await updateAllTabBadges();
   await closeOffscreen();
 }
 
@@ -264,9 +292,9 @@ async function stopWatching() {
 async function init() {
   await loadSettings();
   try { dirHandle = await loadHandle(); } catch (e) { dirHandle = null; }
-  if (!dirHandle) { settings.enabled = false; await saveSettings(); updateActionBadge(false); return; }
+  if (!dirHandle) { settings.enabled = false; await saveSettings(); updateExtensionIcon(); await updateAllTabBadges(); return; }
   if (settings.enabled) await startWatching();
-  else updateActionBadge(false);
+  else { updateExtensionIcon(); await updateAllTabBadges(); }
 }
 init();
 
@@ -291,6 +319,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       case 'SET_ORIGIN':
         watchedOrigin = msg.origin ?? null;
         await saveSettings();
+        await updateAllTabBadges();
         sendResponse({ ok:true });
         break;
       case 'SET_ORIGIN_MODE':
@@ -317,11 +346,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse({ ok:true });
         break;
       case 'CLEAR_DIRECTORY':
-        await stopWatching(); dirHandle = null; await clearHandle();
         settings.enabled = false;
         settings.originMode = false;
         watchedOrigin  = null;
+        dirHandle      = null;
         await saveSettings();
+        await stopWatching();
+        await clearHandle();
         await chrome.storage.local.set({ logEntries: [] });
         sendResponse({ ok:true });
         break;
@@ -330,4 +361,19 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
   })();
   return true;
+});
+
+// ─── Tab event listeners (per-tab badge) ──────────────────────────────────────
+
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    updateBadgeForTab(tabId, tab.url ?? '');
+  } catch (_) {}
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url !== undefined || changeInfo.status === 'complete') {
+    updateBadgeForTab(tabId, tab.url ?? '');
+  }
 });
