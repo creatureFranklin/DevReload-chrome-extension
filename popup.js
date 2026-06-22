@@ -367,6 +367,20 @@ btnRegrant.addEventListener('click', async () => {
     if (perm === 'granted') {
       permWarning.classList.add('hidden');
       chkEnabled.disabled = false;
+
+      // Re-persist the handle and force the SW to reload it from IndexedDB.
+      // This is critical: requestPermission() was called in the popup (window)
+      // context, but the SW's in-memory dirHandle may not yet reflect the
+      // updated permission state. Re-saving + SET_DIRECTORY gives the SW a
+      // freshly-loaded handle reference that passes the Chrome permission check
+      // on the very first poll, preventing a PERMISSION_LOST loop.
+      try {
+        await saveHandleToDB(cachedHandle);
+        await sendMsg({ type: 'SET_DIRECTORY', name: cachedHandle.name });
+      } catch (e) {
+        console.warn('[DevReload] Failed to refresh handle after re-grant:', e);
+      }
+
       // Auto-start watching after permission re-granted
       const enableResult = await sendMsg({ type: 'SET_ENABLED', enabled: true });
       if (enableResult?.ok) {
